@@ -1,0 +1,1242 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# Understanding data and fixing data types
+# 
+# 
+# dataset:
+# https://www.kaggle.com/datasets/parisrohan/credit-score-classification
+# 
+# useful articles:
+# https://towardsdatascience.com/the-ultimate-guide-to-data-cleaning-3969843991d4
+# https://medium.com/omarelgabrys-blog/statistics-probability-exploratory-data-analysis-714f361b43d1#a7e5
+# https://cxl.com/blog/outliers/#h-3-change-the-value-of-outliers
+# 
+
+# In[1]:
+
+
+# importing needed packages
+import sklearn
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings("ignore") 
+
+
+# In[2]:
+
+
+#importing data
+df = pd.read_csv("train.csv")
+# test_df = pd.read_csv("test.csv") not needed to this project, we split train_df data
+
+# checking proportions of the train/test data
+# print(df.shape)
+# print(test_df.shape)
+
+# test data does not include target column, it will not be used
+# let's keep initial df, as working df could will be modified
+import copy
+og_train_df = copy.deepcopy(df)
+
+
+# In[3]:
+
+
+# splitting the data 
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+
+
+# Podział na zbiory treningowy i testowy
+train_test_df, validation_df = train_test_split(df, test_size=0.3, random_state=42)
+
+# podział na test i walidację
+train_df, test_df = train_test_split(train_test_df, test_size=0.3, random_state=42)
+
+y_train = train_df.Credit_Score
+y_test = test_df.Credit_Score
+y_val = validation_df.Credit_Score
+
+train_df.drop('Credit_Score', axis=1)
+test_df = test_df.drop('Credit_Score', axis=1)
+validation_df = validation_df.drop('Credit_Score', axis=1)
+
+
+
+
+# Wyświetlenie rozmiarów zbiorów treningowego i testowego
+# print("Rozmiar zbioru walidacyjnego:", len(validation_df))
+# print("Rozmiar zbioru treningowego:", len(train_df))
+# print("Rozmiar zbioru testowego:", len(test_df))
+
+
+# display(train_df)
+# display(test_df)
+# display(validation_df)
+
+
+# In[4]:
+
+
+df[df.duplicated()].drop_duplicates()
+# there are no duplicates
+df.drop(['ID', 'Customer_ID'], axis = 'columns')[df.duplicated()].drop_duplicates()
+# no duplicates in whole data set
+
+
+# In[5]:
+
+
+# # checking number of non-null values and data types of culumns
+# train_df.info()
+# test_df.info()
+# validation_df.info()
+
+
+# In[6]:
+
+
+# train_df['Credit_Score'].value_counts()
+# dane_do_wykresu = [['Poor',28998],['Standard',53174],['Good',17828]]
+# df_wykres = pd.DataFrame(dane_do_wykresu)
+# df_wykres.columns = 'Credit Score', 'Count'
+# # df_wykres
+
+# fig, ax = plt.subplots()
+
+# # utworzenie półkołowego wykresu danych z kolumny
+# ax.pie(df_wykres['Count'], labels=df_wykres['Credit Score'], startangle=90, counterclock=False, autopct='%1.1f%%')
+
+# # dodanie tytułu do wykresu
+# ax.set_title('Credit Score')
+
+# plt.show()
+
+
+# In[7]:
+
+
+# checking statistics for numeric data
+# train_df.describe().T
+
+#DONE seeing possible outliers in: Num_Bank_Accounts, Num_Credit_Card, Interest_Rate, Num_Credit_Inquiries, Total_EMI_per_month
+
+
+# In[8]:
+
+
+# checking percentage of null rows in columns
+# print("Percent of nulls in train_df")
+# print(train_df.isna().mean()*100)
+
+# print("Percent of nulls in test_df")
+# print(test_df.isna().mean()*100)
+
+# print("Percent of nulls in validation_df")
+# print(validation_df.isna().mean()*100)
+
+# conclusions:
+# percent of nulls in each dataframe is similiar for each column
+# we will remove all nulls with the same method
+
+
+# In[9]:
+
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+
+# Load your dataset
+df = copy.deepcopy(train_df)
+
+# Calculate the percentage of NaN values in each column
+nan_percentages = df.isna().mean() * 100
+nan_percentages = nan_percentages[nan_percentages != 0]
+
+
+# Define a color gradient based on the percentage of NaN values
+cmap = mcolors.LinearSegmentedColormap.from_list('mycmap', ['green', 'yellow', 'red'])
+
+# plt.bar(nan_percentages.index, nan_percentages.values, color=cmap(nan_percentages.values / 100))
+# plt.xlabel('Column')
+# plt.ylabel('% of NaN values')
+# plt.title('Percentage of NaN values in each column')
+
+# # Rotate the x-axis labels to be upright
+# plt.xticks(rotation=90)
+
+# plt.show()
+
+
+# In[10]:
+
+
+# checking significant values in columns
+
+# for col in train_df.columns:
+#     print("Column name: " + col + ", dtype: " + str(train_df[col].dtype))
+#     print(train_df[col].value_counts(dropna = False))
+#   print("\n")
+
+# Conclusions:
+#DONE we could remove ID, Customer_ID, Name, SSN (social security number of a person)
+#DONE Age above 120 should be replaced with other value
+#DONE Annual_Income, Num_Bank_Accounts, Num_Credit_Card, Interest_Rate, Num_of_Loan, Num_of_Delayed_Payment, Num_Credit_Inquiries, Monthly_Balance might have outliers
+# Type_of_Loan has values separated by coma, that needs to be modified
+
+#DONE Delay_from_due_date consider negative values (IT'S FINE)
+#DONE Changed_Credit_Limit underscore ("_") propably means 0 (limit didn't change)
+#DONE Credit_Mix underscore ("_") should be changed
+#DONE Outstanding_Debt, Amount_invested_monthly  underscore ("_") should be removed
+#DONE Credit_History_Age has to be modified to numeric instead of described verbally data
+#DONE Payment_Behaviour "!@9#%8" has to be changed
+
+
+# In[11]:
+
+
+# train_df.info()
+
+
+# In[12]:
+
+
+# Credit_Score - change to numeric
+numeric_mapping_dict = {'Standard': 0, 'Poor': -1, 'Good': 1}
+# train_df['Credit_Score'] = train_df['Credit_Score'].map(numeric_mapping_dict)
+# train_df['Credit_Score'] = train_df.Credit_Score.astype(int)
+
+y_train = y_train.map(numeric_mapping_dict)
+y_train = y_train.astype(int)
+
+y_test = y_test.map(numeric_mapping_dict)
+y_test = y_test.astype(int)
+
+y_val = y_val.map(numeric_mapping_dict)
+y_val = y_val.astype(int)
+
+def YearsAndMonthsToMonths(sentence):
+    return int(sentence.split()[0]) * 12 + int(sentence.split()[3])
+# assign proper data type to columns
+
+def types_change(train_df):
+    # Month
+    from datetime import datetime as dt
+    train_df['Month'] = train_df['Month'].apply(lambda x: dt.strptime(x, '%B')) 
+    train_df['Month'] = train_df['Month'].dt.month
+
+    # Age
+    #train_df[train_df['Age'].str.contains('_')]['Age']
+    train_df['Age'] = train_df['Age'].apply(lambda x: x.replace('_','',))
+    train_df['Age'] = train_df.Age.astype(int)
+
+    # Occupation
+    train_df['Occupation'] = train_df['Occupation'].apply(lambda x: 'Other' if str(x) == '_______' else x)
+    train_df['Occupation'] = train_df.Occupation.astype(str)
+
+    # Annual_Income
+    train_df['Annual_Income'] = train_df['Annual_Income'].apply(lambda x: x.replace('_','',))
+    train_df['Annual_Income'] = train_df.Annual_Income.astype(float)
+
+    # Num_of_Loan
+    train_df['Num_of_Loan'] = train_df['Num_of_Loan'].apply(lambda x: x.replace('_','',))
+    train_df['Num_of_Loan'] = train_df.Num_of_Loan.astype(int)
+
+    # Num_of_Delayed_Payment
+    train_df['Num_of_Delayed_Payment'] = train_df['Num_of_Delayed_Payment'].apply(lambda x: x if x is np.NaN else int(str(x).replace('_','',)))
+    train_df['Num_of_Delayed_Payment'] = train_df.Num_of_Delayed_Payment.astype(float)
+
+    # Credit_Mix
+    train_df['Credit_Mix'] = train_df['Credit_Mix'].apply(lambda x: np.NaN if str(x) == '_' else x)
+    numeric_mapping_dict = {'Standard': 0, 'Bad': -1, 'Good': 1}
+    train_df['Credit_Mix'] = train_df['Credit_Mix'].map(numeric_mapping_dict)
+
+    # Changed_Credit_Limit
+    train_df['Changed_Credit_Limit'] = train_df['Changed_Credit_Limit'].apply(lambda x: np.NaN if str(x) == '_' else x)
+    train_df['Changed_Credit_Limit'] = train_df.Changed_Credit_Limit.astype(float)
+
+    # Outstanding_Debt
+    train_df['Outstanding_Debt'] = train_df['Outstanding_Debt'].apply(lambda x: x.replace('_','',))
+    train_df['Outstanding_Debt'] = train_df.Outstanding_Debt.astype(float)
+
+    # Credit_History_Age
+
+
+    train_df.Credit_History_Age = train_df.Credit_History_Age.apply(lambda x: x if x is np.NaN else YearsAndMonthsToMonths(x))
+    train_df['Credit_History_Age'] = train_df.Credit_History_Age.astype(float)
+
+    # Amount_invested_monthly
+    train_df['Amount_invested_monthly'] = train_df['Amount_invested_monthly'].apply(lambda x: x if x is np.NaN else float(str(x).replace('_','',)))
+    train_df['Amount_invested_monthly'] = train_df.Amount_invested_monthly.astype(float)
+
+    # Payment_Behaviour
+    train_df['Payment_Behaviour'] = train_df['Payment_Behaviour'].apply(lambda x: 'Other' if str(x) == '!@9#%8' else x)
+    train_df['Payment_Behaviour'] = train_df.Payment_Behaviour.astype(str)
+
+    # Monthly_Balance
+    train_df['Monthly_Balance'] = train_df['Monthly_Balance'].apply(lambda x: float(str(x).replace('_','',)))
+    train_df['Monthly_Balance'] = train_df.Monthly_Balance.astype(float)
+
+    # Payment_of_Min_Amount
+    numeric_mapping_dict = {'NM': 0, 'No': -1, 'Yes': 1}
+    train_df['Payment_of_Min_Amount'] = train_df['Payment_of_Min_Amount'].map(numeric_mapping_dict)
+    train_df['Monthly_Balance'] = train_df.Monthly_Balance.astype(float)
+
+    from sklearn.preprocessing import LabelEncoder
+    le = LabelEncoder()
+
+    # Occupation - change to numeric
+    train_df.Occupation = le.fit_transform(train_df.Occupation)
+    train_df['Occupation'] = train_df.Occupation.astype(int)
+
+    # Payment_Behaviour - change to numeric
+
+    train_df.Payment_Behaviour = le.fit_transform(train_df.Payment_Behaviour)
+    train_df['Payment_Behaviour'] = train_df.Payment_Behaviour.astype(int)
+
+    
+
+types_change(train_df)
+types_change(test_df)
+types_change(validation_df)
+
+
+
+# train_df.info()
+# test_df.info()
+# validation_df.info()
+
+
+
+
+
+# Left to be done: 
+# Type_of_Loan (modify categories inside) - propably split to multiple columns
+#DONE Change to int Num_of_Delayed_Payment, Num_Credit_Inquiries
+
+
+# In[13]:
+
+
+# # assign proper data type to columns
+# train_df = copy.deepcopy(og_train_df)
+# # Month
+# from datetime import datetime as dt
+# train_df['Month'] = train_df['Month'].apply(lambda x: dt.strptime(x, '%B')) 
+# train_df['Month'] = train_df['Month'].dt.month
+
+# # Age
+# #train_df[train_df['Age'].str.contains('_')]['Age']
+# train_df['Age'] = train_df['Age'].apply(lambda x: x.replace('_','',))
+# train_df['Age'] = train_df.Age.astype(int)
+
+# # Occupation
+# train_df['Occupation'] = train_df['Occupation'].apply(lambda x: 'Other' if str(x) == '_______' else x)
+# train_df['Occupation'] = train_df.Occupation.astype(str)
+
+# # Annual_Income
+# train_df['Annual_Income'] = train_df['Annual_Income'].apply(lambda x: x.replace('_','',))
+# train_df['Annual_Income'] = train_df.Annual_Income.astype(float)
+
+# # Num_of_Loan
+# train_df['Num_of_Loan'] = train_df['Num_of_Loan'].apply(lambda x: x.replace('_','',))
+# train_df['Num_of_Loan'] = train_df.Num_of_Loan.astype(int)
+
+# # Num_of_Delayed_Payment
+# train_df['Num_of_Delayed_Payment'] = train_df['Num_of_Delayed_Payment'].apply(lambda x: x if x is np.NaN else int(str(x).replace('_','',)))
+# train_df['Num_of_Delayed_Payment'] = train_df.Num_of_Delayed_Payment.astype(float)
+
+# # Credit_Mix
+# train_df['Credit_Mix'] = train_df['Credit_Mix'].apply(lambda x: np.NaN if str(x) == '_' else x)
+# numeric_mapping_dict = {'Standard': 0, 'Bad': -1, 'Good': 1}
+# train_df['Credit_Mix'] = train_df['Credit_Mix'].map(numeric_mapping_dict)
+
+# # Changed_Credit_Limit
+# train_df['Changed_Credit_Limit'] = train_df['Changed_Credit_Limit'].apply(lambda x: np.NaN if str(x) == '_' else x)
+# train_df['Changed_Credit_Limit'] = train_df.Changed_Credit_Limit.astype(float)
+
+# # Outstanding_Debt
+# train_df['Outstanding_Debt'] = train_df['Outstanding_Debt'].apply(lambda x: x.replace('_','',))
+# train_df['Outstanding_Debt'] = train_df.Outstanding_Debt.astype(float)
+
+# # Credit_History_Age
+# def YearsAndMonthsToMonths(sentence):
+#     return int(sentence.split()[0]) * 12 + int(sentence.split()[3])
+
+# train_df.Credit_History_Age = train_df.Credit_History_Age.apply(lambda x: x if x is np.NaN else YearsAndMonthsToMonths(x))
+# train_df['Credit_History_Age'] = train_df.Credit_History_Age.astype(float)
+
+# # Amount_invested_monthly
+# train_df['Amount_invested_monthly'] = train_df['Amount_invested_monthly'].apply(lambda x: x if x is np.NaN else float(str(x).replace('_','',)))
+# train_df['Amount_invested_monthly'] = train_df.Amount_invested_monthly.astype(float)
+
+# # Payment_Behaviour
+# train_df['Payment_Behaviour'] = train_df['Payment_Behaviour'].apply(lambda x: 'Other' if str(x) == '!@9#%8' else x)
+# train_df['Payment_Behaviour'] = train_df.Payment_Behaviour.astype(str)
+
+# # Monthly_Balance
+# train_df['Monthly_Balance'] = train_df['Monthly_Balance'].apply(lambda x: float(str(x).replace('_','',)))
+# train_df['Monthly_Balance'] = train_df.Monthly_Balance.astype(float)
+
+# # Payment_of_Min_Amount
+# numeric_mapping_dict = {'NM': 0, 'No': -1, 'Yes': 1}
+# train_df['Payment_of_Min_Amount'] = train_df['Payment_of_Min_Amount'].map(numeric_mapping_dict)
+# train_df['Monthly_Balance'] = train_df.Monthly_Balance.astype(float)
+
+# from sklearn.preprocessing import LabelEncoder
+# le = LabelEncoder()
+
+# # Occupation - change to numeric
+# train_df.Occupation = le.fit_transform(train_df.Occupation)
+# train_df['Occupation'] = train_df.Occupation.astype(int)
+
+# # Payment_Behaviour - change to numeric
+
+# train_df.Payment_Behaviour = le.fit_transform(train_df.Payment_Behaviour)
+# train_df['Payment_Behaviour'] = train_df.Payment_Behaviour.astype(int)
+
+# # Credit_Score - change to numeric
+# numeric_mapping_dict = {'Standard': 0, 'Poor': -1, 'Good': 1}
+# train_df['Credit_Score'] = train_df['Credit_Score'].map(numeric_mapping_dict)
+# train_df['Credit_Score'] = train_df.Credit_Score.astype(int)
+# train_df.info()
+
+
+# In[14]:
+
+
+#for col in train_df.columns:
+#   print("Column name: " + col + ", dtype: " + str(train_df[col].dtype))
+#     print(train_df[col].value_counts(dropna = False))
+#     print("\n")
+
+
+# Dealing with NaNs, outliers and unrelevant columns
+
+# In[15]:
+
+
+# TODO
+#DONE Nan certain columns: ID, Customer_ID, Name, SSN (social security number of a person)
+
+#DONE fulfill NaNs, aviable options: 
+## DROP: drop rows, drop columns
+## IMPUTE: mean (not skewed) or median (not sensitive to outliers), linear regression
+## FLAG: changing to 'Other' value
+
+#DONE outliers, check: Annual_Income, Num_Bank_Accounts, Num_Credit_Card, Interest_Rate, Num_of_Loan, Num_of_Delayed_Payment, Num_Credit_Inquiries, Monthly_Balance
+#DONE see distribution of features, for sure: hist and boxplot
+#DONE Num_of_Loan has negative values (check other nums)
+#DONE check if some columns could be ints instead of floats
+
+
+# In[16]:
+
+
+
+# #### Serving outliers and fulfilling NaNs
+
+# ### Monthly_Inhand_Salary
+
+# #  (code to check distribution of the data)
+# #  train_df.Monthly_Inhand_Salary.isna().sum()/train_df.shape[0]*100
+# #  train_df.Monthly_Inhand_Salary.value_counts()
+# #  train_df.Monthly_Inhand_Salary.describe()
+# #  sns.histplot(train_df.Monthly_Inhand_Salary)
+# #  sns.boxplot(train_df.Monthly_Inhand_Salary)
+# #  plt.show()
+
+
+# ## DECISION: outliers match distribution of the feature, imputing median
+
+# m = train_df.Monthly_Inhand_Salary.median()
+# train_df['Monthly_Inhand_Salary'] = train_df['Monthly_Inhand_Salary'].apply(lambda x: m if np.isnan(x) else x)
+
+
+
+# ### Num_of_Delayed_Payment
+
+# # (code to check distribution of the data)
+# # train_df.Num_of_Delayed_Payment.isna().sum()/train_df.shape[0]*100
+# # train_df.Num_of_Delayed_Payment.value_counts()
+# # train_df.Num_of_Delayed_Payment.describe()
+# # sns.histplot(train_df.Num_of_Delayed_Payment, bins=50)
+# # sns.boxplot(train_df.Num_of_Delayed_Payment)
+# # sns.displot(train_df.Num_of_Delayed_Payment, kind="ecdf")
+# # plt.show()
+
+# # checking outliers 
+# # (code to check distribution of the data)
+# # train_df.sort_values(by="Num_of_Delayed_Payment", ascending=False)[['Num_of_Delayed_Payment', 'Annual_Income', 'Monthly_Inhand_Salary', 'Num_Bank_Accounts', 'Num_of_Loan', 'Amount_invested_monthly', 'Monthly_Balance']].head(20)
+# # centile99Annual_Income = train_df.Annual_Income.quantile(0.99)
+# # centile99Monthly_Balance = train_df.Monthly_Balance.quantile(0.99)
+# # train_df[(train_df['Annual_Income'] > centile95Annual_Income) & (train_df['Monthly_Balance'] > centile95Monthly_Balance)].sort_values(by="Num_of_Delayed_Payment", ascending=False)[[
+# #     'Num_of_Delayed_Payment', 'Annual_Income', 'Monthly_Inhand_Salary', 'Num_Bank_Accounts', 'Num_of_Loan', 'Amount_invested_monthly', 'Monthly_Balance']].head(20)
+# # they are clearly outliers as they do not correspond to other features, have to be cut
+
+
+# ## DECISION: Num_of_Delayed_Payment has to be positive, outliers have to be cut, imputing median
+
+# q = train_df.Num_of_Delayed_Payment.quantile(0.95)
+# train_df['Num_of_Delayed_Payment'] = train_df['Num_of_Delayed_Payment'].apply(lambda x: q if x>q else x)
+
+# m = train_df.Num_of_Delayed_Payment.median()
+# train_df['Num_of_Delayed_Payment'] = train_df['Num_of_Delayed_Payment'].apply(lambda x: m if np.isnan(x) or x<0 else x)
+
+
+
+# ### Num_Credit_Inquiries         
+
+# # (code to check distribution of the data)
+# # train_df.Num_Credit_Inquiries.describe()
+# # train_df.Num_Credit_Inquiries.value_counts()
+# # sns.histplot(train_df.Num_Credit_Inquiries, bins=50)
+# # sns.boxplot(train_df.Num_Credit_Inquiries)
+# # sns.displot(train_df.Num_Credit_Inquiries, kind="ecdf")
+# # plt.show()
+
+# # checking outliers 
+# # (code to check distribution of the data)
+# # train_df.sort_values(by="Num_Credit_Inquiries", ascending=False)[['Num_Credit_Inquiries', 'Annual_Income', 'Monthly_Inhand_Salary', 'Num_Bank_Accounts', 'Num_of_Loan', 'Amount_invested_monthly', 'Monthly_Balance']].head(20)
+# # centile99Annual_Income = train_df.Annual_Income.quantile(0.99)
+# # centile99Monthly_Balance = train_df.Monthly_Balance.quantile(0.99)
+# # train_df[(train_df['Annual_Income'] > centile95Annual_Income) & (train_df['Monthly_Balance'] > centile95Monthly_Balance)].sort_values(by="Num_Credit_Inquiries", ascending=False)[[
+# #    'Num_Credit_Inquiries', 'Annual_Income', 'Monthly_Inhand_Salary', 'Num_Bank_Accounts', 'Num_of_Loan', 'Amount_invested_monthly', 'Monthly_Balance']].head(20)
+# # they are clearly outliers as they do not correspond to other features, have to be cut
+
+
+# ## DECISION: outliers need to be cut, imputing median
+
+# q = train_df.Num_Credit_Inquiries.quantile(0.98)
+# train_df['Num_Credit_Inquiries'] = train_df['Num_Credit_Inquiries'].apply(lambda x: q if x>q else x)
+
+# m = train_df.Num_Credit_Inquiries.median()
+# train_df['Num_Credit_Inquiries'] = train_df['Num_Credit_Inquiries'].apply(lambda x: m if np.isnan(x) else x)
+
+
+
+# ### Credit_History_Age
+
+# # (code to check distribution of the data)
+# # train_df.Credit_History_Age.describe()
+# # sns.histplot(train_df.Credit_History_Age, bins=50)
+# # sns.boxplot(train_df.Credit_History_Age)
+# # sns.displot(train_df.Credit_History_Age, kind="ecdf")
+# # plt.show()
+
+
+# ## DECISION: there are no outliers, imputing median
+
+# m = train_df.Credit_History_Age.median()
+# train_df['Credit_History_Age'] = train_df['Credit_History_Age'].apply(lambda x: m if np.isnan(x) else x)
+
+
+
+# ### Credit_Mix
+
+# # (code to check distribution of the data)
+# # train_df.Credit_Mix.describe()
+# # train_df.Credit_Mix.value_counts()
+# # sns.histplot(train_df.Credit_Mix)
+# # sns.displot(train_df.Credit_Mix, kind="ecdf")
+# # plt.show()
+
+# ## DECISION no outliers, imputing median
+
+# m = train_df.Credit_Mix.median()
+# train_df['Credit_Mix'] = train_df['Credit_Mix'].apply(lambda x: m if np.isnan(x) else x) 
+# # imputing with median seems reasonable, it is 0 value, which is neutral to 2 other, unique values in the column: -1 and 1
+
+
+
+# ### Amount_invested_monthly 
+  
+# # (code to check distribution of the data)
+# # train_df.Amount_invested_monthly.describe()
+# # sns.histplot(train_df.Amount_invested_monthly, bins=50)
+# # sns.boxplot(train_df.Amount_invested_monthly)
+# # sns.displot(train_df.Amount_invested_monthly, kind="ecdf")
+# # plt.show()
+
+# # checking outliers 
+# # centile95Annual_Income = train_df.Annual_Income.quantile(0.95)
+# # centile95Monthly_Balance = train_df.Monthly_Balance.quantile(0.95)
+# # train_df.sort_values(by="Amount_invested_monthly", ascending=False)[[
+# #    'Amount_invested_monthly', 'Annual_Income', 'Monthly_Inhand_Salary', 'Num_Bank_Accounts', 'Num_of_Loan', 'Amount_invested_monthly', 'Monthly_Balance']].head(20)
+
+
+# ## DECISION: outliers need to be cut, imputing median
+
+# iqr = train_df.Amount_invested_monthly.quantile(0.75) - train_df.Amount_invested_monthly.quantile(0.25)
+# top_border = train_df.Amount_invested_monthly.quantile(0.75) + 1.5*iqr
+# train_df['Amount_invested_monthly'] = train_df['Amount_invested_monthly'].apply(lambda x: top_border if x>top_border else x)
+# # TODO: what about values inbeetwen 125-135 (strange look on histplot)
+
+
+
+# m = train_df.Amount_invested_monthly.median()
+# train_df['Amount_invested_monthly'] = train_df['Amount_invested_monthly'].apply(lambda x: m if np.isnan(x) else x) 
+
+
+
+# ### Monthly_Balance 
+
+# # (code to check distribution of the data)
+# # train_df.Monthly_Balance.describe()
+# # sns.histplot(train_df.Monthly_Balance, bins=50)
+# # sns.boxplot(train_df.Monthly_Balance)
+# # sns.displot(train_df.Monthly_Balance, kind="ecdf")
+# # plt.show()
+
+
+# ## DECISION: outloutliers need to be cut, imputing median
+
+# train_df['Monthly_Balance'] = train_df['Monthly_Balance'].apply(lambda x: 7.759665e-03 if x<-3.333333e+26 else x)
+# train_df['Monthly_Balance'].describe()
+
+# m = train_df.Monthly_Balance.median()
+# train_df['Monthly_Balance'] = train_df['Monthly_Balance'].apply(lambda x: m if np.isnan(x) else x) 
+
+
+
+# ### Changed_Credit_Limit  
+ 
+# # (code to check distribution of the data)
+# # train_df.Changed_Credit_Limit.describe()
+# # sns.histplot(train_df.Changed_Credit_Limit, bins=50)
+# # sns.boxplot(train_df.Changed_Credit_Limit)
+# # sns.displot(train_df.Changed_Credit_Limit, kind="ecdf")
+# # plt.show()
+
+
+# ## DECISION: outliers match distribution of the feature, imputing median 
+
+# m = train_df.Changed_Credit_Limit.median()
+# train_df['Changed_Credit_Limit'] = train_df['Changed_Credit_Limit'].apply(lambda x: m if np.isnan(x) else x)
+
+
+# In[17]:
+
+
+def outliers_change(train_df):
+    m = train_df.Monthly_Inhand_Salary.median()
+    train_df['Monthly_Inhand_Salary'] = train_df['Monthly_Inhand_Salary'].apply(lambda x: m if np.isnan(x) else x)
+
+
+    q = train_df.Num_of_Delayed_Payment.quantile(0.95)
+    train_df['Num_of_Delayed_Payment'] = train_df['Num_of_Delayed_Payment'].apply(lambda x: q if x>q else x)
+
+    m = train_df.Num_of_Delayed_Payment.median()
+    train_df['Num_of_Delayed_Payment'] = train_df['Num_of_Delayed_Payment'].apply(lambda x: m if np.isnan(x) or x<0 else x)
+
+
+    q = train_df.Num_Credit_Inquiries.quantile(0.98)
+    train_df['Num_Credit_Inquiries'] = train_df['Num_Credit_Inquiries'].apply(lambda x: q if x>q else x)
+
+    m = train_df.Num_Credit_Inquiries.median()
+    train_df['Num_Credit_Inquiries'] = train_df['Num_Credit_Inquiries'].apply(lambda x: m if np.isnan(x) else x)
+
+    m = train_df.Credit_History_Age.median()
+    train_df['Credit_History_Age'] = train_df['Credit_History_Age'].apply(lambda x: m if np.isnan(x) else x)
+
+    m = train_df.Credit_Mix.median()
+    train_df['Credit_Mix'] = train_df['Credit_Mix'].apply(lambda x: m if np.isnan(x) else x) 
+
+
+    iqr = train_df.Amount_invested_monthly.quantile(0.75) - train_df.Amount_invested_monthly.quantile(0.25)
+    top_border = train_df.Amount_invested_monthly.quantile(0.75) + 1.5*iqr
+    train_df['Amount_invested_monthly'] = train_df['Amount_invested_monthly'].apply(lambda x: top_border if x>top_border else x)
+
+
+    m = train_df.Amount_invested_monthly.median()
+    train_df['Amount_invested_monthly'] = train_df['Amount_invested_monthly'].apply(lambda x: m if np.isnan(x) else x) 
+
+
+
+    train_df['Monthly_Balance'] = train_df['Monthly_Balance'].apply(lambda x: 7.759665e-03 if x<-3.333333e+26 else x)
+    train_df['Monthly_Balance'].describe()
+
+    m = train_df.Monthly_Balance.median()
+    train_df['Monthly_Balance'] = train_df['Monthly_Balance'].apply(lambda x: m if np.isnan(x) else x)
+
+    m = train_df.Changed_Credit_Limit.median()
+    train_df['Changed_Credit_Limit'] = train_df['Changed_Credit_Limit'].apply(lambda x: m if np.isnan(x) else x)
+
+outliers_change(train_df)
+outliers_change(test_df)
+outliers_change(validation_df)
+
+
+
+
+
+
+# In[18]:
+
+
+# # check for outliers and uncorrectness in remaining columns
+
+# # To all is used at least:
+# # train_df.X.describe() / train_df.X.value_counts()
+# # sns.histplot(train_df.X, bins=50)
+# # sns.boxplot(train_df.X)
+# # sns.displot(train_df.X, kind="ecdf")
+# # plt.show()
+
+# ### Age
+
+# m = train_df.Age.median()
+# train_df['Age'] = train_df['Age'].apply(lambda x: m if x < 15 or x > 110 else x)
+
+# # outliery
+# q = train_df.Age.quantile(0.95)
+# train_df['Age'] = train_df['Age'].apply(lambda x: q if x>q else x)
+
+# ### Annual_Income
+
+
+# #train_df.Annual_Income.describe()
+# #train_df.sort_values(['Annual_Income'], ascending=False).head(20)
+# #sns.histplot(np.log1p(train_df.Annual_Income), bins=20)
+# #plt.show()
+# #Conclusion: there top_border are outliers
+
+
+# iqr = train_df.Annual_Income.quantile(0.75) - train_df.Annual_Income.quantile(0.25)
+# top_border = train_df.Annual_Income.quantile(0.75) + 1.5*iqr
+# train_df['Annual_Income'] = train_df['Annual_Income'].apply(lambda x: top_border if x>top_border else x)
+
+# # Num_Bank_Accounts
+
+# # train_df.Num_Bank_Accounts.describe()
+# # train_df.sort_values(['Num_Bank_Accounts'], ascending=False)[['Num_Bank_Accounts', 'Num_Credit_Card']].head(20) # shows that it is an anomaly
+# # sns.histplot(np.log1p(train_df.Num_Bank_Accounts), bins=20)
+# # sns.displot(train_df.Num_Bank_Accounts, kind="ecdf")
+# # plt.show()
+# # Conclusion: getting rid of negative values and cutting outliers
+
+# m = train_df.Num_Bank_Accounts.median()
+# train_df['Num_Bank_Accounts'] = train_df['Num_Bank_Accounts'].apply(lambda x: m if x < 0 else x)
+
+# q = train_df.Num_Bank_Accounts.quantile(0.95)
+# train_df['Num_Bank_Accounts'] = train_df['Num_Bank_Accounts'].apply(lambda x: q if x>q else x)
+
+
+# # Num_Credit_Card
+
+# # train_df.Num_Credit_Card.describe()
+# # train_df.sort_values(['Num_Credit_Card'], ascending=False)[['Num_Bank_Accounts', 'Num_Credit_Card']].head(20) # shows that it is an anomaly
+# # sns.displot(train_df.Num_Credit_Card, kind="ecdf")
+# # plt.show()
+# # Conclusion: cutting outliers
+
+# q = train_df.Num_Credit_Card.quantile(0.95)
+# train_df['Num_Credit_Card'] = train_df['Num_Credit_Card'].apply(lambda x: q if x>q else x)
+
+# # Interest_Rate
+
+# # train_df.Interest_Rate.describe()
+# # train_df.sort_values(['Interest_Rate'], ascending=False).head(20)
+# # sns.displot(train_df.Interest_Rate, kind="ecdf")
+# # sns.histplot(np.log1p(train_df.Interest_Rate), bins=20)
+# # plt.show()
+# # Conclusion: cutting outliers
+
+# q = train_df.Interest_Rate.quantile(0.95)
+# train_df['Interest_Rate'] = train_df['Interest_Rate'].apply(lambda x: q if x>q else x)
+
+# # Num_of_Loan
+
+# # train_df.Num_of_Loan.describe()
+# # train_df.sort_values(['Num_of_Loan'], ascending=False).head(20)
+# # sns.displot(train_df.Num_of_Loan, kind="ecdf")
+# # sns.histplot(np.log1p(train_df.Num_of_Loan), bins=20)
+# # plt.show()
+# # Conclusion: cutting outliers
+
+# m = train_df.Num_of_Loan.median()
+# train_df['Num_of_Loan'] = train_df['Num_of_Loan'].apply(lambda x: m if x < 0 else x)
+
+# q = train_df.Num_of_Loan.quantile(0.95)
+# train_df['Num_of_Loan'] = train_df['Num_of_Loan'].apply(lambda x: q if x>q else x)
+
+# # Delay_from_due_date
+
+# # train_df.Delay_from_due_date.describe()
+# # sns.displot(train_df.Delay_from_due_date, kind="ecdf")
+# # sns.histplot(np.log1p(train_df.Delay_from_due_date), bins=20)
+# # plt.show()
+# # Conclusion: imputing median for negative values
+
+# m = train_df.Num_of_Loan.median()
+# train_df['Delay_from_due_date'] = train_df['Delay_from_due_date'].apply(lambda x: m if x < 0 else x)
+
+# # Outstanding_Debt
+
+# # train_df.Outstanding_Debt.describe()
+# # sns.displot(train_df.Outstanding_Debt, kind="ecdf")
+# # sns.histplot(np.log1p(train_df.Outstanding_Debt), bins=20)
+# # plt.show()
+# # Conclusion: everyting fine
+
+# # Credit_Utilization_Ratio
+
+# # train_df.Credit_Utilization_Ratio.describe()
+# # sns.displot(train_df.Credit_Utilization_Ratio, kind="ecdf")
+# # sns.histplot(np.log1p(train_df.Credit_Utilization_Ratio), bins=20)
+# # plt.show()
+# # Conclusion: everything fine
+
+# # Total_EMI_per_month
+
+# # train_df.Total_EMI_per_month.describe()
+# # train_df.sort_values(['Total_EMI_per_month'], ascending=False).head(20)
+# # sns.displot(train_df.Total_EMI_per_month, kind="ecdf")
+# # sns.histplot(np.log1p(train_df.Total_EMI_per_month), bins=20)
+# # plt.show()
+# # Conclusion: cutting outliers
+
+# q = train_df.Total_EMI_per_month.quantile(0.95)
+# train_df['Total_EMI_per_month'] = train_df['Total_EMI_per_month'].apply(lambda x: q if x>q else x)
+
+
+# In[19]:
+
+
+def outliers_change_2(train_df):
+    m = train_df.Age.median()
+    train_df['Age'] = train_df['Age'].apply(lambda x: m if x < 15 or x > 110 else x)
+
+
+    q = train_df.Age.quantile(0.95)
+    train_df['Age'] = train_df['Age'].apply(lambda x: q if x>q else x)
+
+
+
+
+    iqr = train_df.Annual_Income.quantile(0.75) - train_df.Annual_Income.quantile(0.25)
+    top_border = train_df.Annual_Income.quantile(0.75) + 1.5*iqr
+    train_df['Annual_Income'] = train_df['Annual_Income'].apply(lambda x: top_border if x>top_border else x)
+
+
+
+    m = train_df.Num_Bank_Accounts.median()
+    train_df['Num_Bank_Accounts'] = train_df['Num_Bank_Accounts'].apply(lambda x: m if x < 0 else x)
+
+    q = train_df.Num_Bank_Accounts.quantile(0.95)
+    train_df['Num_Bank_Accounts'] = train_df['Num_Bank_Accounts'].apply(lambda x: q if x>q else x)
+
+
+
+
+    q = train_df.Num_Credit_Card.quantile(0.95)
+    train_df['Num_Credit_Card'] = train_df['Num_Credit_Card'].apply(lambda x: q if x>q else x)
+
+
+
+    q = train_df.Interest_Rate.quantile(0.95)
+    train_df['Interest_Rate'] = train_df['Interest_Rate'].apply(lambda x: q if x>q else x)
+
+
+
+
+    m = train_df.Num_of_Loan.median()
+    train_df['Num_of_Loan'] = train_df['Num_of_Loan'].apply(lambda x: m if x < 0 else x)
+
+    q = train_df.Num_of_Loan.quantile(0.95)
+    train_df['Num_of_Loan'] = train_df['Num_of_Loan'].apply(lambda x: q if x>q else x)
+
+
+
+    m = train_df.Num_of_Loan.median()
+    train_df['Delay_from_due_date'] = train_df['Delay_from_due_date'].apply(lambda x: m if x < 0 else x)
+
+
+
+    q = train_df.Total_EMI_per_month.quantile(0.95)
+    train_df['Total_EMI_per_month'] = train_df['Total_EMI_per_month'].apply(lambda x: q if x>q else x)
+
+outliers_change_2(train_df)
+outliers_change_2(test_df)
+outliers_change_2(validation_df)
+
+
+# In[20]:
+
+#train_df.Type_of_Loan.info()
+
+
+# In[21]:
+
+
+# Changing columns that have int values, but are in float categories (couldn't be done earlier, because there weer NaNs)
+def changing_to_int(train_df):
+    train_df['Age'] = train_df.Age.astype(int)
+    train_df['Num_Bank_Accounts'] = train_df.Num_Bank_Accounts.astype(int)
+    train_df['Num_Credit_Card'] = train_df.Num_Credit_Card.astype(int)
+    train_df['Interest_Rate'] = train_df.Interest_Rate.astype(int)
+    train_df['Num_of_Loan'] = train_df.Num_of_Loan.astype(int)
+    train_df['Delay_from_due_date'] = train_df.Delay_from_due_date.astype(int)
+    train_df['Credit_History_Age'] = train_df.Credit_History_Age.astype(int)
+    train_df['Num_of_Delayed_Payment'] = train_df.Num_of_Delayed_Payment.astype(int)
+    train_df['Num_Credit_Inquiries'] = train_df.Num_Credit_Inquiries.astype(int)
+    train_df['Credit_Mix'] = train_df.Credit_Mix.astype(int)
+    train_df['Credit_History_Age'] = train_df.Credit_History_Age.astype(int)
+    
+changing_to_int(train_df)
+changing_to_int(test_df)
+changing_to_int(validation_df)
+
+
+
+# In[22]:
+
+
+# train_df['Type_of_Loan'].isnull().sum()
+# train_df['Type_of_Loan'] = train_df['Type_of_Loan'].fillna('Other')
+# train_df['Type_of_Loan'].isnull().sum()
+# # Deleting NA
+# train_df['Type_of_Loan'] = train_df['Type_of_Loan'].fillna('Other')
+
+# # Adding columns for all types of loans
+# types_of_loans_dict = {}
+# for raw_value in train_df['Type_of_Loan'].value_counts().index[:]:
+    
+#     raw_value = raw_value.replace('and','')
+#     list_of_loan_types = raw_value.split(',')
+
+#     for j in range(len(list_of_loan_types)):
+#         list_of_loan_types[j] = list_of_loan_types[j].replace(' ','')
+
+#     for k in list_of_loan_types:
+#         if k not in types_of_loans_dict.values():
+#             types_of_loans_dict[len(types_of_loans_dict)] = k
+
+# zeros = [0] * train_df.shape[0]
+# for i in types_of_loans_dict.values():
+#     train_df[i] = zeros
+
+# display(train_df)
+# train_df.shape
+# train_df.Type_of_Loan[0]
+
+
+# for index, value in train_df['Type_of_Loan'].iteritems():
+#     print(f"Index: {index}, Value: {value}")
+
+
+# In[23]:
+
+
+def changing_loans(train_df):
+    # Deleting NA
+    train_df['Type_of_Loan'] = train_df['Type_of_Loan'].fillna('Other')
+    train_df = train_df.reset_index(drop=True)
+    # Adding columns for all types of loans
+    types_of_loans_dict = {}
+    for raw_value in train_df['Type_of_Loan'].value_counts().index[:]:
+
+        raw_value = raw_value.replace('and','')
+        list_of_loan_types = raw_value.split(',')
+
+        for j in range(len(list_of_loan_types)):
+            list_of_loan_types[j] = list_of_loan_types[j].replace(' ','')
+
+        for k in list_of_loan_types:
+            if k not in types_of_loans_dict.values():
+                types_of_loans_dict[len(types_of_loans_dict)] = k
+
+    zeros = [0] * train_df.shape[0]
+    for i in types_of_loans_dict.values():
+        train_df[i] = zeros
+
+    # Transforming type_of_loan into seperate columns
+    for i in range(len(train_df['Type_of_Loan'])):
+        raw_value = train_df['Type_of_Loan'][i]
+        raw_value = raw_value.replace('and','')
+        list_of_loan_types = raw_value.split(',')
+
+        for j in range(len(list_of_loan_types)):
+            list_of_loan_types[j] = list_of_loan_types[j].replace(' ','')
+
+        for k in list_of_loan_types:
+           train_df[k][i] = 1
+
+    train_df = train_df.drop('Type_of_Loan', axis=1)
+
+changing_loans(train_df)
+changing_loans(test_df)
+changing_loans(validation_df)
+train_df
+test_df
+validation_df
+
+train_df = train_df.drop('Credit_Score', axis=1)
+train_df = train_df.drop('Type_of_Loan', axis=1)
+test_df = test_df.drop('Type_of_Loan', axis=1)
+validation_df = validation_df.drop('Type_of_Loan', axis=1)
+# In[24]:
+
+
+# dropping irrelevant columns
+train_df = train_df.drop(['Name', 'ID', 'Customer_ID', 'SSN'], axis=1)
+test_df = test_df.drop(['Name', 'ID', 'Customer_ID', 'SSN'], axis=1)
+validation_df = validation_df.drop(['Name', 'ID', 'Customer_ID', 'SSN'], axis=1)
+
+
+# In[25]:
+
+
+
+# DONE
+#  do normalizacji:
+#  Annual_Income
+#  Monthly_Inhand_Salary
+#  Outstanding_Debt
+#  Credit_History_Age
+#  Total_EMI_per_month
+#  Amount_invested_monthly	
+#  Monthly_Balance
+
+# QUESTION
+# should we normalize data from days columns?
+def normalization_df(train_df):
+    cols_to_scale = ['Annual_Income',
+    'Monthly_Inhand_Salary',
+    'Outstanding_Debt',
+    'Credit_History_Age',
+    'Total_EMI_per_month',
+    'Amount_invested_monthly',	
+    'Monthly_Balance']
+
+    # counting of min and max value in each column
+    min_vals = train_df[cols_to_scale].min()
+    max_vals = train_df[cols_to_scale].max()
+
+    # scaling values to be in (0,1)
+    scaled_data = (train_df[cols_to_scale] - min_vals) / (max_vals - min_vals)
+
+    # adding scaled data to dataframe
+    train_df[cols_to_scale] = scaled_data
+normalization_df(train_df)
+normalization_df(test_df)
+normalization_df(validation_df)
+
+# test_df.describe().T
+
+
+# In[26]:
+
+
+# Checking for correlations
+
+# Which columns might be correlated:
+# 1.Annual_Income - Monthly_Inhand_Salary
+# 2.Num_Bank_Accounts - Num_Credit_Card
+
+columns_to_analyze_1 = ['Annual_Income','Monthly_Inhand_Salary']
+
+pearson_corr_1 = train_df[columns_to_analyze_1].corr(method='pearson')
+spearman_corr_1 = train_df[columns_to_analyze_1].corr(method='spearman')
+
+# print("Korelacja Pearsona:")
+# print(pearson_corr_1)
+# print('\n')
+# print("Korelacja Spearmana:")
+# print(spearman_corr_1)
+
+# print('\n' *3)
+
+columns_to_analyze_2 = ['Num_Bank_Accounts','Num_Credit_Card']
+
+pearson_corr_2 = train_df[columns_to_analyze_2].corr(method='pearson')
+spearman_corr_2 = train_df[columns_to_analyze_2].corr(method='spearman')
+
+# print("Korelacja Pearsona:")
+# print(pearson_corr_2)
+# print('\n')
+# print("Korelacja Spearmana:")
+# print(spearman_corr_2)
+
+# Conclusion
+# Annual_Income and Monthly_Inhand_Salary are strongly correlated(0.82)#
+# We should drop one of these columns
+
+# Check for all correlations and analyse
+column_names = train_df.columns.values.tolist()
+pearson_corr_all = train_df[column_names].corr(method='pearson')
+spearman_corr_all = train_df[column_names].corr(method='spearman')
+
+# print("Korelacja Pearsona:")
+# print(pearson_corr_all)
+# print('\n')
+# print("Korelacja Spearmana:")
+# print(spearman_corr_all)
+
+# Considerable correlations:
+#     Annual_Income - Monthly_Balance 0.66
+#     Num_Bank_Accounts - Credit_Mix -0.62 credit mix is categorical
+#     Interest_Rade - Credit_Mix -0.63  credit mix is categorical
+#     Num_of_Loan - Outstanding_Debt 0.61 not connected in my opinion
+#     Delay_from_due_date - Credit_Mix -0.61  credit mix is categorical
+# 
+
+# Conclusion
+# Annual_Income and Monthly_Inhand_Salary are strongly correlated(0.82)#
+# We should drop one of these columns
+
+
+# as annual_income is strongly correlated with monthly balance but monthly inhand salary is not 
+# we will drop annual income column
+
+train_df = train_df.drop("Annual_Income", axis='columns')
+test_df = test_df.drop("Annual_Income", axis='columns')
+validation_df = validation_df.drop("Annual_Income", axis='columns')
+
+
+
+
+# In[ ]:
+
+
+train_df.columns
+
+
+# In[ ]:
+
+
+# split data
+# from sklearn.model_selection import train_test_split
+
+# # train/test
+# X_train, X_test, y_train, y_test = train_test_split(train_df.drop('Credit_Score', axis=1), train_df.Credit_Score, test_size=0.3, random_state=42)
+
+# # train/valid
+# X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.3, random_state=42)
+
+
+# In[ ]:
+
+
+# X_valid = X_valid.drop(['Name', 'ID', 'Customer_ID', 'SSN'], axis=1)
+# # TODO
+# # pick which columns should be used
+
+# # choose a few models and compare them (use score function)
+
+X_train = train_df
+X_test = test_df
+X_val = validation_df
+
+X_train = X_train.reset_index(drop=True)
+X_val = X_val.reset_index(drop=True)
+y_train = y_train.reset_index(drop=True)
+y_val = y_val.reset_index(drop=True)
+
+X = pd.concat([X_train, X_val], ignore_index=True)
+y = pd.concat([y_train, y_val], ignore_index=True)
+
+X = X.drop('Month', axis=1)
+X_test = X_test.drop('Month', axis=1)
+
+# data = {'name': [""],
+#         'kind': [""],
+#         'acc': [0],
+#         'pre': [0],
+#         'rec': [0],
+#         'f1': [0],
+#         'params': [""]}
+# df = pd.DataFrame(data)
+# df.to_csv('scores.csv',index=False)
+
+# data = pd.read_csv("scores.csv")   
+# df = pd.DataFrame(data)
+# df
+
+# data = pd.read_csv("scores.csv")   
+# df = pd.DataFrame(data)
+# df = df.drop(len(df)-1)
+# df = df.drop('Unnamed: 0', axis=1)
+# df.to_csv('scores.csv', index=False)
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import pandas as pd
+
+def save_results(name, kind, acc, pre, rec, f1, params):
+    data = pd.read_csv("scores.csv")   
+    df = pd.DataFrame(data)
+    
+    df.loc[len(df)] = {'name': name,
+                       'kind': kind,
+                        'acc': acc,
+                        'pre': pre,
+                        'rec': rec,
+                        'f1':  f1,
+                        'params': params}
+    
+    df.to_csv('scores.csv', index=False)
+    df.head(10)
+
+def show_scores(y_test,y_test_pred, name, kind, params=""):
+
+    test_accuracy = accuracy_score(y_test, y_test_pred)
+    test_precision = precision_score(y_test, y_test_pred, average='macro')
+    test_recall = recall_score(y_test, y_test_pred, average='macro')
+    test_f1 = f1_score(y_test, y_test_pred, average='macro')
+
+    print(name)
+    print("Accuracy: ", accuracy_score(y_test, y_test_pred))
+    print("Precision: ", precision_score(y_test, y_test_pred, average='macro'))
+    print("Recall: ", recall_score(y_test, y_test_pred, average='macro'))
+    print("F1 score: ", f1_score(y_test, y_test_pred, average='macro'))
+
+    save_results(name, kind, test_accuracy, test_precision, test_recall, test_f1, params)
+
+# Decision Tree
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+# Checking feature importances
+
+dt = DecisionTreeClassifier()
+dt.fit(X, y)
+
+feature_importances = dt.feature_importances_
+for i in range(len(X.columns)):
+    print(f"Ważność cechy {X.columns[i]}: {feature_importances[i]}")
+
+
+# Dropping features that have too little importance
+
+# X_dropped = X
+# X_test_dropped = X_test
+
+# for i in range(len(X.columns)):
+#     if feature_importances[i] < 0.01:
+#         X_dropped = X_dropped.drop(X.columns[i], axis=1)
+#         X_test_dropped = X_test_dropped.drop(X.columns[i], axis=1)
+
+
+# Checking default parameters
+
+# print(gb.get_params())
+
+
+# Checking results of a model with special parameters
+
+# dt = DecisionTreeClassifier()
+# dt.fit(X_dropped,y)
+
+# y_pred = dt.predict(X_dropped)
+# y_test_pred = dt.predict(X_test_dropped)
+
+# Showing results and saving it to a df
+# show_scores(y, y_pred, "DecisionTree", "train", "")
+# show_scores(y_test, y_test_pred, "DecisionTree", "test", "")
