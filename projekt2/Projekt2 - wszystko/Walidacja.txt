@@ -1,0 +1,26 @@
+Zwalidowanie grupy Łukasza Grabarskiego oraz Łukasza Lepianki przez grupę Franciszka Szczepaniaka i Mateusza Wiktorzaka
+
+Walidacja: 
+
+- dużo wykresów ale brak interprtacji albo wniosków pod nimi
+- na samym początku - jaki tak właściwie model biznesowy przyjmujemy, co jest naszym celem w klasteryzacji??
+- może warto przetestować jak tworzą się klastry wykorzystując inną liczbę n_clusters w K-means. 
+- wykresy PCA - co na nich tak właściwie widzimy? Część punktów zbiera się w jednej "ścianie" a reszta jest rozproszona. Co z tego wynika?
+- jak możemy zinterpretować te klastry, co się w nich znajduje?
+- stworzona została dataframe centroids - nic się z nią dalej nie dzieje. Można ją użyć do oceny jakości klasteryzacji poprzez miarę taką jak na przykład Inertia.
+- czy sprawdzenie tylko dla k-means to nie za mało? Można spróbować klasteryzacji hierarchicznej.
+- do preprocessingu nie mam uwag
+- przy sprawdzaniu preprocessingu na zbiorze walidacyjnym nie występują żadne dziwne odchyły, ani nic się nie wywala, więc ok.
+
+Dla mierzenia shilouette faktycznie wychodzi, że 6 lub 7 klastrów zwraca praktycznie jednakowy wynik. 
+
+Sprawdzając metodą łokciową poniżej, optymalne zwrócone n_clusters = 6. Więc tym bardziej zachęcam do popróbowania z innymi liczbami klastr(chociażby 6), chyba że mamy jakiś cel w posiadaniu akurat 7 klastrów. :
+
+"
+elbow = KElbowVisualizer(KMeans(), k=np.arange(1,20,1),random_state=0)
+elbow.fit(X)
+elbow.show();
+
+"
+
+
